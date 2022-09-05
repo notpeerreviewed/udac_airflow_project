@@ -19,7 +19,7 @@ The following steps need to be complete before this project can be implemented:
 4. Add Airflow connection to Redshift
 
 
-## Datatsets
+## Datasets
 
 The dataset for this project are:
 
