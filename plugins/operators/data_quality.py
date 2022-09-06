@@ -9,30 +9,28 @@ class DataQualityOperator(BaseOperator):
 
     @apply_defaults
     def __init__(self,
-                 redshift_conn_id = "",
-                 tables = [],
+                 redshift_conn_id,
+                 fmt: [str],
+                 query,
+                 failure_value,
                  *args, **kwargs):
 
         super(DataQualityOperator, self).__init__(*args, **kwargs)
-        
+
         self.redshift_conn_id = redshift_conn_id
-        self.tables = tables
+        self.fmt = fmt
+        self.query = query
+        self.failure_value = failure_value
 
 
     def execute(self, context):
-        redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id) 
-        
-        for table in self.tables:
-            records = redshift.get_records("SELECT COUNT(*) FROM {}".format(table))     
-            
-            if len(records) < 1 or len(records[0]) < 1:
-                self.log.error("{} returned no results".format(table))
-                raise ValueError("Data quality check failed. {} returned no results".format(table))
-                
-            num_records = records[0][0]
-            
-            if num_records == 0:
-                self.log.error("No records present in destination table {}".format(table))
-                raise ValueError("No records present in destination {}".format(table))
-                
-            self.log.info("Data quality on table {} check passed with {} records".format(table, num_records))
+        self.log.info('Running DataQualityOperator')
+
+        redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
+
+        for f in self.fmt:
+            query = self.query.format(f)
+            res = redshift.get_first(query)[0]
+
+            if res == self.failure_value:
+                raise ValueError(f"failed query {query}, failure {self.failure_value}")

@@ -8,11 +8,10 @@ from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
 
 from helpers import SqlQueries
 
-# AWS_KEY = os.environ.get('AWS_KEY')
-# AWS_SECRET = os.environ.get('AWS_SECRET')
+
 
 default_args = {
-    'owner': 'jeff lean',
+    'owner': 'udacity',
     'start_date': datetime(2019, 1, 12),
     'depends_on_past': False,
     'retries': 3,
@@ -24,7 +23,7 @@ default_args = {
 dag = DAG('primary_dag',
           default_args=default_args,
           description='Load and transform data in Redshift with Airflow',
-          schedule_interval='0 * * * *',
+          #schedule_interval='@hourly',
           catchup = False
         )
 
@@ -111,7 +110,13 @@ run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
     dag=dag,
     redshift_conn_id="redshift",
-    tables=["songplays", "users", "songs", "artists", "time"]
+    fmt=["public.songplays",
+         "public.songs",
+         "public.users",
+         "public.artists",
+         "public.time"],
+    query="SELECT count(*) FROM {}",
+    failure_value=0
 )
 
 end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
